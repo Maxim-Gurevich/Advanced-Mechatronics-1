@@ -61,10 +61,10 @@ void loop() {
   }
 
   //debug prints
-  Serial.print(buttonStates[2]+'...');
-  Serial.print(buttonStates[2]+'...');
-  Serial.print(buttonStates[3]+'...');
-  Serial.print(buttonStates[4]+'...');
+  Serial.print(buttonStates[2] + '...');
+  Serial.print(buttonStates[2] + '...');
+  Serial.print(buttonStates[3] + '...');
+  Serial.print(buttonStates[4] + '...');
   Serial.println(buttonStates[5]);
 
   //////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,10 +97,15 @@ void loop() {
 
   switch (curr_state) {
     case (AVOID_HEADON):
-      enableMotor(BOTH_MOTORS);
-      setMotorDirection(BOTH_MOTORS, MOTOR_DIR_BACKWARD);
-      setMotorSpeed(BOTH_MOTORS, motorSpeed);
-      // NOTE: RIGHT_MOTOR and LEFT_MOTOR are also defined in SimpleRSLK.h
+      if (currentTime - buttonStates[2] < 1000 || currentTime - buttonStates[3] < 1000) {
+        enableMotor(BOTH_MOTORS);
+        setMotorDirection(BOTH_MOTORS, MOTOR_DIR_BACKWARD);
+        setMotorSpeed(BOTH_MOTORS, motorSpeed);
+      } else {
+        enableMotor(BOTH_MOTORS);
+        setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
+        setMotorSpeed(BOTH_MOTORS, motorSpeed);
+      }
       break;
     case (KEEP_DRIVING):
       //enableMotor(BOTH_MOTORS);
