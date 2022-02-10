@@ -1,7 +1,7 @@
 #include "SimpleRSLK.h"
 
 //array of unsigned ints to keep track of when each bumper has been pressed
-unsigned int buttonStates [6] = { -1000000}; //time when pressed
+int buttonStates [6] = { -100000}; //time when pressed (initialized far in the past)
 
 int motorSpeed = 10;
 
