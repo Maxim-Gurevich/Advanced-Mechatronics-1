@@ -1,8 +1,8 @@
 #include "SimpleRSLK.h"
 
-//array of unsigned ints to keep track of when each bumper has been pressed
+//array of ints to keep track of when each bumper has been pressed
 int buttonStates [6] = { -100000}; //time when pressed (initialized far in the past)
-
+int currentTime = 0;
 int motorSpeed = 10;
 
 enum states {
@@ -36,37 +36,52 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  ///////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////
   //Monitor Variables
-  ///////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////
 
   //keep track of each button
   if (!digitalRead(BP_SW_PIN_0)) {
     buttonStates[0] = millis();
-  } if (!digitalRead(BP_SW_PIN_1)) {
+  }
+  if (!digitalRead(BP_SW_PIN_1)) {
     buttonStates[1] = millis();
-  } if (!digitalRead(BP_SW_PIN_2)) {
+  }
+  if (!digitalRead(BP_SW_PIN_2)) {
     buttonStates[2] = millis();
-  } if (!digitalRead(BP_SW_PIN_3)) {
+  }
+  if (!digitalRead(BP_SW_PIN_3)) {
     buttonStates[3] = millis();
-  } if (!digitalRead(BP_SW_PIN_4)) {
+  }
+  if (!digitalRead(BP_SW_PIN_4)) {
     buttonStates[4] = millis();
-  } if (!digitalRead(BP_SW_PIN_5)) {
+  }
+  if (!digitalRead(BP_SW_PIN_5)) {
     buttonStates[5] = millis();
   }
 
-  Serial.print(buttonStates[2]);
-  Serial.print(buttonStates[3]);
-  Serial.print(buttonStates[4]);
+  //debug prints
+  Serial.print(buttonStates[2]+'...');
+  Serial.print(buttonStates[2]+'...');
+  Serial.print(buttonStates[3]+'...');
+  Serial.print(buttonStates[4]+'...');
   Serial.println(buttonStates[5]);
-  ///////////////////////////////
+
+  //////////////////////////////////////////////////////////////////////////////////////////////
   //Identify State
-  ///////////////////////////////
-  if (millis() - buttonStates[2] < 2000 ||
-      millis() - buttonStates[3] < 2000) {
+  //////////////////////////////////////////////////////////////////////////////////////////////
+  currentTime = millis();
+  if ((currentTime - buttonStates[0] < 2000 || currentTime - buttonStates[1] < 2000) &&
+      (currentTime - buttonStates[2] < 2000 || currentTime - buttonStates[3] < 2000) &&
+      (currentTime - buttonStates[4] < 2000 || currentTime - buttonStates[5] < 2000) ) {
+    curr_state = STOP;
+  } else if (currentTime - buttonStates[0] < 2000 || currentTime - buttonStates[1] < 2000) {
+    curr_state = AVOID_LEFTOBS;
+  } else if (currentTime - buttonStates[2] < 2000 || currentTime - buttonStates[3] < 2000) {
     curr_state = AVOID_HEADON;
-  }
-  else {
+  } else if (currentTime - buttonStates[4] < 2000 || currentTime - buttonStates[5] < 2000) {
+    curr_state = AVOID_RIGHTOBS;
+  } else {
     curr_state = KEEP_DRIVING;
   }
   /*if (buttonStates[0] || buttonStates[1]) {
@@ -76,24 +91,22 @@ void loop() {
     curr_state = AVOID_RIGHTOBS;
   */
 
-  ///////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////////////////////
   //Action
-  ///////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////////////////////
 
   switch (curr_state) {
     case (AVOID_HEADON):
-      //pauseMotor(BOTH_MOTORS);
-      //setMotorDirection(BOTH_MOTORS, MOTOR_DIR_BACKWARD);
-      //setMotorSpeed(BOTH_MOTORS, motorSpeed); // NOTE: RIGHT_MOTOR and LEFT_MOTOR are also defined in SimpleRSLK.h
-      //enableMotor(BOTH_MOTORS);
-      //delay(1500);
-      //enableMotor(LEFT_MOTOR);
-      //delay(1500);
+      enableMotor(BOTH_MOTORS);
+      setMotorDirection(BOTH_MOTORS, MOTOR_DIR_BACKWARD);
+      setMotorSpeed(BOTH_MOTORS, motorSpeed);
+      // NOTE: RIGHT_MOTOR and LEFT_MOTOR are also defined in SimpleRSLK.h
       break;
     case (KEEP_DRIVING):
       //enableMotor(BOTH_MOTORS);
       //setMotorDirection(BOTH_MOTORS, MOTOR_DIR_FORWARD);
-      //setMotorSpeed(BOTH_MOTORS, motorSpeed); // NOTE: RIGHT_MOTOR and LEFT_MOTOR are also defined in SimpleRSLK.h
+      //setMotorSpeed(BOTH_MOTORS, motorSpeed);
+      // NOTE: RIGHT_MOTOR and LEFT_MOTOR are also defined in SimpleRSLK.h
       break;
   }
 }
