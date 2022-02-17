@@ -99,14 +99,14 @@ void loop() {
     case (AVOID_LEFTOBS):
       enableMotor(BOTH_MOTORS);
       setMotorDirection(BOTH_MOTORS, MOTOR_DIR_BACKWARD);
-      setMotorSpeed(LEFT_MOTOR, motorSpeed / 2);
-      setMotorSpeed(RIGHT_MOTOR, motorSpeed);
+      setMotorSpeed(LEFT_MOTOR, motorSpeed);
+      setMotorSpeed(RIGHT_MOTOR, motorSpeed / 2);
       break;
     case (AVOID_RIGHTOBS):
       enableMotor(BOTH_MOTORS);
       setMotorDirection(BOTH_MOTORS, MOTOR_DIR_BACKWARD);
-      setMotorSpeed(RIGHT_MOTOR, motorSpeed / 2);
-      setMotorSpeed(LEFT_MOTOR, motorSpeed);
+      setMotorSpeed(RIGHT_MOTOR, motorSpeed);
+      setMotorSpeed(LEFT_MOTOR, motorSpeed / 2);
       break;
     case (KEEP_DRIVING):
       enableMotor(BOTH_MOTORS);
