@@ -57,7 +57,7 @@ void loop() {
   }
 
   //debug prints
-  Serial.print(buttonStates[2] + '...');
+  Serial.print(buttonStates[1] + '...');
   Serial.print(buttonStates[2] + '...');
   Serial.print(buttonStates[3] + '...');
   Serial.print(buttonStates[4] + '...');
