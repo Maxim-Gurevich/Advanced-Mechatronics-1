@@ -14,6 +14,9 @@
 int countsPerRev = 48;
 double maxSpeed = 66.7; //in rev/sec (this is found experimentally, you may need to confirm the value)
 double delayTime = 20; // in ms
+int encoder0PosPrev = 0;
+int encoderVel = 0;
+int CommandSpeed = 0;
 
 // Pin Definitions
 const int PWMoutp = 19;
@@ -25,6 +28,7 @@ const int encoder1PinA = 36;
 const int encoder0PinB = 6;
 const int encoder1PinB = 37;
 
+
 // Variable Definitions
 volatile signed int encoder0Pos = 0;
 signed int encoderPosLast = 0;
@@ -32,8 +36,8 @@ int potPWMval = 0;
 int motorPWMval = 0;
 
 //PID constants (Use the Ziegler Nicholas Tuning Method as a first guess)
-double kp = 100;
-double ki = 0;
+double kp = 4;
+double ki = .05;//0.05
 double kd = 0;
 
 // PID Variables
@@ -64,14 +68,14 @@ void setup()
   // Pre-set the direction of the motors
   digitalWrite(PWMoutp, HIGH);
   digitalWrite(PWMoutn, LOW);
-
-  // USE FOR PID CONTROL
-  //setPoint = 30;                          //set point at zero rev/second
-
 }
+
 
 void loop()
 {
+    // USE FOR PID CONTROL
+  setPoint = 30;                         //set point at zero rev/second
+
   // POTENTIOMETER CONTROL
 
   potPWMval = analogRead(potentiometerPWMinput);
@@ -81,7 +85,6 @@ void loop()
   }
   //potPWMval = map(potPWMval,0,1023,-maxSpeed,maxSpeed);
   //setPoint = potPWMval;
-
   if (potPWMval < 0) {
     digitalWrite(PWMoutp, HIGH);
     digitalWrite(PWMoutn, LOW);
@@ -91,8 +94,38 @@ void loop()
     digitalWrite(PWMoutp, LOW);
     digitalWrite(PWMoutn, HIGH);
   }
+  ///////////////////////////////////////////
+  //CommandSpeed=encoderVel*Kp
+  if (millis() > 0000 && millis() < 10000) {
+    CommandSpeed = computePID(encoderVel);
+    if (CommandSpeed > 255) {
+    CommandSpeed = 255;
+  } else if(CommandSpeed < -255) {
+    CommandSpeed = -255;
+  }
+    Serial.print(encoderVel); // CHANGE THIS TO PLOT MOTOR SPEED
+    Serial.print(" ,");
+    Serial.println(CommandSpeed);
+  } else {
+    CommandSpeed = 0;
+  }
+  ///////////////////////////////////////////
 
-  analogWrite(PWMspeedPin,abs(potPWMval));
+
+  if (CommandSpeed != 0) {
+    analogWrite(PWMspeedPin, abs(CommandSpeed));
+  } else {
+    analogWrite(PWMspeedPin, abs(potPWMval));
+  }
+  if (CommandSpeed > 0) {
+    digitalWrite(PWMoutp, HIGH);
+    digitalWrite(PWMoutn, LOW);
+  } else {
+    digitalWrite(PWMoutp, LOW);
+    digitalWrite(PWMoutn, HIGH);
+  }
+
+
 
   motorSpeed = -10; // Here you will need to compute the motor speed in counts/rev.
   // Hint: you just need to convert the encoder counts to Rev/Sec!
@@ -104,7 +137,9 @@ void loop()
   //analogWrite(PWMspeedPin, computePID(motorSpeed));
 
   //print out speed (currently is only plotting the pot value)
-  Serial.println(encoder0Pos); // CHANGE THIS TO PLOT MOTOR SPEED
+  encoderVel = encoder0Pos - encoder0PosPrev;
+  encoder0PosPrev = encoder0Pos;
+
 
   encoderPosLast = encoder0Pos;
   delay(delayTime); // This is a delay to time the control loop. In the future, this should be a non-blocking version.
@@ -134,7 +169,6 @@ void doEncoderA() {
     else {
       encoder0Pos = encoder0Pos - 1;          // CCW
     }
-
   }
 }
 //================
@@ -171,12 +205,17 @@ double computePID(double inp) {
 
   error = setPoint - inp;                         // determine error
   cumError += error * elapsedTime;                // compute integral
+  //if (cumError > 1000) {
+ //   cumError = 1000;
+ // } else if(cumError < -1000) {
+ //   cumError = -1000;
+ // }
   rateError = (error - lastSpeedError) / elapsedTime; // compute derivative
 
   double out = kp * error + ki * cumError + kd * rateError; //PID output
 
   lastSpeedError = error;                            //remember current error
   previousTime = currentTime;                        //remember current time
-  Serial.println(error);
+  Serial.println(cumError);
   return out;                                        //have function return the PID output
 }
