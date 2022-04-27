@@ -18,6 +18,6 @@ duration = pulseIn(echoPin,HIGH);
 distance = (duration/2) / 74.07;
 
 Serial.println(distance);
-delay(10);
+delay(100);
   
 }
