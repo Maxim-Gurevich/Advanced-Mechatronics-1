@@ -5,7 +5,7 @@ uint16_t sensorVal[LS_NUM_SENSORS];
 uint16_t sensorMaxVal[LS_NUM_SENSORS];
 uint16_t sensorMinVal[LS_NUM_SENSORS];
 uint16_t slowSpeed = 13;
-uint16_t normalSpeed = 17;
+uint16_t normalSpeed = 13;
 uint16_t fastSpeed = 24;
 uint16_t sensorCalVal[LS_NUM_SENSORS];
 uint8_t lineColor = DARK_LINE;
@@ -271,8 +271,10 @@ void loop() {
         }
         Sonar_Sensors();
       }
-      break;
       Current_State = Reset_Position;
+      setMotorSpeed(BOTH_MOTORS, 0);
+      break;
+
 
     case Reset_Position:
       while ((Right_Sonar + Left_Sonar) / 2 < 42) {
@@ -288,6 +290,7 @@ void loop() {
           setMotorSpeed(LEFT_MOTOR, normalSpeed);
           setMotorSpeed(RIGHT_MOTOR, normalSpeed);
         }
+        Sonar_Sensors();
       }
 
       while ((Right_Sonar + Left_Sonar) / 2 > 42) {
@@ -303,6 +306,7 @@ void loop() {
           setMotorSpeed(LEFT_MOTOR, normalSpeed);
           setMotorSpeed(RIGHT_MOTOR, normalSpeed);
         }
+        Sonar_Sensors();
       }
       setMotorSpeed(BOTH_MOTORS, 0);
       while (abs(Sonar_Diff) > 1) {
@@ -316,104 +320,103 @@ void loop() {
           setMotorSpeed(LEFT_MOTOR, normalSpeed);
           setMotorSpeed(RIGHT_MOTOR, 0);
         }
-        setMotorSpeed(BOTH_MOTORS, 0);
-        Current_State = IR_Sensors;
-        break;
-
-      case IR_Sensors:
-        if (IRmid == 0) {
-          Current_State = Shoot;
-          Beacon = 1;
-        } else if (IRleft == 0) {
-          Current_State = Turn_Left;
-          Beacon = 0;
-        } else if (IRright == 0) {
-          Current_State = Turn_Right;
-          Beacon = 2;
-        }
-        //else {
-        //          if (Shimmey < 5) {
-        //            setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
-        //            setMotorSpeed(LEFT_MOTOR, normalSpeed);
-        //            setMotorSpeed(RIGHT_MOTOR, 0);
-        //            delay(200);
-        //            Shimmey += 1;
-        //          }
-        //        }
-
+        Sonar_Sensors();
       }
+      setMotorSpeed(BOTH_MOTORS, 0);
+      Current_State = IR_Sensors;
+      break;
+
+    case IR_Sensors:
+      if (IRmid == 0) {
+        Current_State = Shoot;
+        Beacon = 1;
+      } else if (IRleft == 0) {
+        Current_State = Turn_Left;
+        Beacon = 0;
+      } else if (IRright == 0) {
+        Current_State = Turn_Right;
+        Beacon = 2;
+      }
+    //else {
+    //          if (Shimmey < 5) {
+    //            setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
+    //            setMotorSpeed(LEFT_MOTOR, normalSpeed);
+    //            setMotorSpeed(RIGHT_MOTOR, 0);
+    //            delay(200);
+    //            Shimmey += 1;
+    //          }
+    //        }
+
 
     case Turn_Left:
-      {
-        resetLeftEncoderCnt();
-        resetRightEncoderCnt();
-        Left_En = 0;
-        Right_En = 0;
-        while (Left_En < 60 || Right_En < 60) {
-          setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
-          setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_FORWARD);
-          setMotorSpeed(LEFT_MOTOR, normalSpeed);
-          setMotorSpeed(RIGHT_MOTOR, normalSpeed);
-          Left_En = getEncoderLeftCnt();
-          Right_En = getEncoderRightCnt();
-        }
-        setMotorSpeed(BOTH_MOTORS, 0);
-        Current_State = Shoot;
-
-      case Turn_Right:
-        resetLeftEncoderCnt();
-        resetRightEncoderCnt();
-        Left_En = 0;
-        Right_En = 0;
-        while (Left_En < 60 || Right_En < 60) {
-          setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_BACKWARD);
-          setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
-          setMotorSpeed(LEFT_MOTOR, normalSpeed);
-          setMotorSpeed(RIGHT_MOTOR, normalSpeed);
-          Left_En = getEncoderLeftCnt();
-          Right_En = getEncoderRightCnt();
-        }
-        setMotorSpeed(BOTH_MOTORS, 0);
-        Current_State = Shoot;
-        resetLeftEncoderCnt();
-        resetRightEncoderCnt();
-        Left_En = 0;
-        Right_En = 0;
+      resetLeftEncoderCnt();
+      resetRightEncoderCnt();
+      Left_En = 0;
+      Right_En = 0;
+      while (Left_En < 60 || Right_En < 60) {
+        setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
+        setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_FORWARD);
+        setMotorSpeed(LEFT_MOTOR, normalSpeed);
+        setMotorSpeed(RIGHT_MOTOR, normalSpeed);
+        Left_En = getEncoderLeftCnt();
+        Right_En = getEncoderRightCnt();
       }
+      setMotorSpeed(BOTH_MOTORS, 0);
+      Current_State = Shoot;
+      break;
+
+    case Turn_Right:
+      resetLeftEncoderCnt();
+      resetRightEncoderCnt();
+      Left_En = 0;
+      Right_En = 0;
+      while (Left_En < 60 || Right_En < 60) {
+        setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_BACKWARD);
+        setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
+        setMotorSpeed(LEFT_MOTOR, normalSpeed);
+        setMotorSpeed(RIGHT_MOTOR, normalSpeed);
+        Left_En = getEncoderLeftCnt();
+        Right_En = getEncoderRightCnt();
+      }
+      setMotorSpeed(BOTH_MOTORS, 0);
+      Current_State = Shoot;
+      resetLeftEncoderCnt();
+      resetRightEncoderCnt();
+      Left_En = 0;
+      Right_En = 0;
       break;
 
     case Shoot:
-      {
-        delay(5000);
-        if (Beacon == 0 && (Left_En < 60 || Right_En < 60) ) {
-          setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_BACKWARD);
-          setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
-          setMotorSpeed(LEFT_MOTOR, normalSpeed);
-          setMotorSpeed(RIGHT_MOTOR, normalSpeed);
-          Left_En = getEncoderLeftCnt();
-          Right_En = getEncoderRightCnt();
-          if ((Left_En >= 60 || Right_En >= 60)) {
-            Current_State = Reset_Position;
-          }
-        }
-
-        if (Beacon == 1) {
+      delay(5000);
+      if (Beacon == 0 && (Left_En < 60 || Right_En < 60) ) {
+        setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_BACKWARD);
+        setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
+        setMotorSpeed(LEFT_MOTOR, normalSpeed);
+        setMotorSpeed(RIGHT_MOTOR, normalSpeed);
+        Left_En = getEncoderLeftCnt();
+        Right_En = getEncoderRightCnt();
+        if ((Left_En >= 60 || Right_En >= 60)) {
           Current_State = Reset_Position;
         }
+      }
 
-        if (Beacon == 2 && (Left_En < 60 || Right_En < 60) ) {
-          setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
-          setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_FORWARD);
-          setMotorSpeed(LEFT_MOTOR, normalSpeed);
-          setMotorSpeed(RIGHT_MOTOR, normalSpeed);
-          Left_En = getEncoderLeftCnt();
-          Right_En = getEncoderRightCnt();
-          if ((Left_En >= 60 || Right_En >= 60)) {
-            Current_State = Reset_Position;
-          }
+      if (Beacon == 1) {
+        Current_State = Reset_Position;
+      }
+
+      if (Beacon == 2 && (Left_En < 60 || Right_En < 60) ) {
+        setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
+        setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_FORWARD);
+        setMotorSpeed(LEFT_MOTOR, normalSpeed);
+        setMotorSpeed(RIGHT_MOTOR, normalSpeed);
+        Left_En = getEncoderLeftCnt();
+        Right_En = getEncoderRightCnt();
+        if ((Left_En >= 60 || Right_En >= 60)) {
+          Current_State = Reset_Position;
         }
       }
       break;
 
   }
+
 }
