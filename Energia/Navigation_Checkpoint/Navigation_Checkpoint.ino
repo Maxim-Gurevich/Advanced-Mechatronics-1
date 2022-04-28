@@ -29,7 +29,7 @@ int Sonar1_Dist;
 int Right_Sonar;
 
 // Second Sonar Sensor
-uint16_t TRIG2_PIN = P9_3; 
+uint16_t TRIG2_PIN = P9_3;
 uint16_t ECHO2_PIN = P6_3;
 int Sonar2_Dist;
 int Left_Sonar;
@@ -160,20 +160,6 @@ void loop() {
       resetLeftEncoderCnt();
       resetRightEncoderCnt();
 
-      while (Right_En < 180 || Left_En < 180) {
-        setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
-        setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_FORWARD);
-        setMotorSpeed(BOTH_MOTORS, normalSpeed);
-        Right_En = getEncoderRightCnt();
-        Left_En = getEncoderLeftCnt();
-      }
-      Serial.print("Turning: ");
-      Serial.print(Right_Sonar);
-      Serial.print(" - ");
-      Serial.println(Left_Sonar);
-      Sonar_Sensors();
-
-
       // Aligning with the backwall [works]
       while (Left_Sonar > 45 || Right_Sonar > 45) {
         setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
@@ -251,11 +237,11 @@ void loop() {
         Left_En = getEncoderLeftCnt();
         Right_En = getEncoderRightCnt();
       }
-      setMotorSpeed(LEFT_MOTOR, 0);
-      setMotorSpeed(RIGHT_MOTOR, 0);
+
+      setMotorSpeed(BOTH_MOTORS, 0);
 
       while ((Right_Sonar + Left_Sonar) / 2 < 30) {
-        setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
+        setMotorDirection(BOTH_MOTORS, MOTOR_DIR_FORWARD);
         linePos = getLinePosition(sensorCalVal, lineColor);
         if (linePos > 0 && linePos < 3000) {
           setMotorSpeed(LEFT_MOTOR, normalSpeed);
@@ -267,10 +253,11 @@ void loop() {
           setMotorSpeed(LEFT_MOTOR, normalSpeed);
           setMotorSpeed(RIGHT_MOTOR, normalSpeed);
         }
+        Sonar_Sensors();
       }
 
       while ((Right_Sonar + Left_Sonar) / 2 > 30) {
-        setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
+        setMotorDirection(BOTH_MOTORS, MOTOR_DIR_BACKWARD);
         linePos = getLinePosition(sensorCalVal, lineColor);
         if (linePos > 0 && linePos < 3000) {
           setMotorSpeed(LEFT_MOTOR, normalSpeed);
@@ -282,6 +269,7 @@ void loop() {
           setMotorSpeed(LEFT_MOTOR, normalSpeed);
           setMotorSpeed(RIGHT_MOTOR, normalSpeed);
         }
+        Sonar_Sensors();
       }
       break;
       Current_State = Reset_Position;
