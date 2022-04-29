@@ -4,9 +4,10 @@
 uint16_t sensorVal[LS_NUM_SENSORS];
 uint16_t sensorMaxVal[LS_NUM_SENSORS];
 uint16_t sensorMinVal[LS_NUM_SENSORS];
-uint16_t slowSpeed = 13;
 uint16_t normalSpeed = 13;
 uint16_t fastSpeed = 24;
+uint16_t normalSpeedright = 13 ;
+uint16_t normalSpeedleft = 16.8 ;
 uint16_t sensorCalVal[LS_NUM_SENSORS];
 uint8_t lineColor = DARK_LINE;
 int Stop;
@@ -17,7 +18,7 @@ uint16_t erb_pin = P5_0;
 int Shimmey = 0;
 int Shimmey2 = 0;
 int counter;
-int values[6] = {0, 0, 0, 0, 0, 0};
+int values[10] = {0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 int Beacon;
 int Left_En;
 int Right_En;
@@ -123,35 +124,41 @@ void loop() {
       while (Left_Sonar > 45 || Right_Sonar > 45) {
         // Checks the first and last encoder values found, if they are the same,
         // the wheels are not turning
-        if (values[0] == values[2] || values[3] == values[5]) {
-          counter = 0;
+        if (values[0] == values[4] || values[5] == values[9]) {
           // if we cant turn we move backwards set distance 20 pulses (might need to change).
-          while (counter < 20) {
-            setMotorDirection(BOTH_MOTORS, MOTOR_DIR_BACKWARD);
-            setMotorSpeed(BOTH_MOTORS, normalSpeed);
-            counter += 1;
-          }
+          setMotorDirection(BOTH_MOTORS, MOTOR_DIR_BACKWARD);
+          setMotorSpeed(BOTH_MOTORS, normalSpeed);
+          delay(500);
+          setMotorSpeed(BOTH_MOTORS,0);
           // This ensures the backup won't be called again (might not be needed)
           values[0] = 0;
           values[1] = 0;
-          values[2] = 1;
+          values[2] = 0;
           values[3] = 0;
-          values[4] = 0;
-          values[5] = 1;
+          values[4] = 1;
+          values[5] = 0;
+          values[6] = 0;
+          values[7] = 0;
+          values[8] = 0;
+          values[9] = 1;
         }
         setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
         setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_BACKWARD);
-        setMotorSpeed(LEFT_MOTOR, normalSpeed);
-        setMotorSpeed(RIGHT_MOTOR, normalSpeed);
+        setMotorSpeed(LEFT_MOTOR, normalSpeedleft);
+        setMotorSpeed(RIGHT_MOTOR, normalSpeedright);
         Right_En = getEncoderRightCnt();
         Left_En = getEncoderLeftCnt();
         // This will update the list after finding the encoder counts
         values[0] = values[1];
         values[1] = values[2];
-        values[2] = Right_En;
+        values[2] = values[3];
         values[3] = values[4];
-        values[4] = values[5];
-        values[5] = Left_En;
+        values[4] = Right_En;
+        values[5] = values[6];
+        values[6] = values[7];
+        values[7] = values[8];
+        values[8] = values[9];
+        values[9] = Left_En;
         Sonar_Sensors();
       }
 
@@ -160,18 +167,6 @@ void loop() {
       resetLeftEncoderCnt();
       resetRightEncoderCnt();
 
-      // Aligning with the backwall [works]
-      while (Left_Sonar > 45 || Right_Sonar > 45) {
-        setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
-        setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_BACKWARD);
-        setMotorSpeed(LEFT_MOTOR, normalSpeed);
-        setMotorSpeed(RIGHT_MOTOR, normalSpeed);
-        Serial.print("Turning: ");
-        Serial.print(Right_Sonar);
-        Serial.print(" - ");
-        Serial.println(Left_Sonar);
-        Sonar_Sensors();
-      }
       while (abs(Sonar_Diff) > 1) {
         if (Sonar_Diff < 0) {
           setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
@@ -199,19 +194,18 @@ void loop() {
       while (Right_En < 180 || Left_En < 180) {
         setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
         setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_FORWARD);
-        setMotorSpeed(BOTH_MOTORS, normalSpeed);
+        setMotorSpeed(RIGHT_MOTOR, normalSpeedright);
+        setMotorSpeed(LEFT_MOTOR, normalSpeedleft);
         Right_En = getEncoderRightCnt();
         Left_En = getEncoderLeftCnt();
       }
 
-      setMotorSpeed(LEFT_MOTOR, 0);
-      setMotorSpeed(RIGHT_MOTOR, 0);
+      setMotorSpeed(BOTH_MOTORS, 0);
       Sonar_Sensors();
       readLineSensor(sensorVal);
 
       if ((Left_Sonar + Right_Sonar) / 2 > 87) {
         while (sensorVal[4] < 2500 && sensorVal[3] < 2500 && sensorVal[2] < 2000 && sensorVal[5] < 2000) {
-
           setMotorDirection(BOTH_MOTORS, MOTOR_DIR_BACKWARD);
           setMotorSpeed(BOTH_MOTORS, normalSpeed);
           readLineSensor(sensorVal);
@@ -232,8 +226,8 @@ void loop() {
       while (Left_En < 180 || Right_En < 180) {
         setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
         setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_BACKWARD);
-        setMotorSpeed(LEFT_MOTOR, normalSpeed);
-        setMotorSpeed(RIGHT_MOTOR, normalSpeed);
+        setMotorSpeed(LEFT_MOTOR, normalSpeedleft);
+        setMotorSpeed(RIGHT_MOTOR, normalSpeedright);
         Left_En = getEncoderLeftCnt();
         Right_En = getEncoderRightCnt();
       }
@@ -356,8 +350,8 @@ void loop() {
       while (Left_En < 60 || Right_En < 60) {
         setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
         setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_FORWARD);
-        setMotorSpeed(LEFT_MOTOR, normalSpeed);
-        setMotorSpeed(RIGHT_MOTOR, normalSpeed);
+        setMotorSpeed(LEFT_MOTOR, normalSpeedleft);
+        setMotorSpeed(RIGHT_MOTOR, normalSpeedright);
         Left_En = getEncoderLeftCnt();
         Right_En = getEncoderRightCnt();
       }
@@ -373,8 +367,8 @@ void loop() {
       while (Left_En < 60 || Right_En < 60) {
         setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_BACKWARD);
         setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
-        setMotorSpeed(LEFT_MOTOR, normalSpeed);
-        setMotorSpeed(RIGHT_MOTOR, normalSpeed);
+        setMotorSpeed(LEFT_MOTOR, normalSpeedleft);
+        setMotorSpeed(RIGHT_MOTOR, normalSpeedright);
         Left_En = getEncoderLeftCnt();
         Right_En = getEncoderRightCnt();
       }
@@ -391,8 +385,8 @@ void loop() {
       if (Beacon == 0 && (Left_En < 60 || Right_En < 60) ) {
         setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_BACKWARD);
         setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
-        setMotorSpeed(LEFT_MOTOR, normalSpeed);
-        setMotorSpeed(RIGHT_MOTOR, normalSpeed);
+        setMotorSpeed(LEFT_MOTOR, normalSpeedleft);
+        setMotorSpeed(RIGHT_MOTOR, normalSpeedright);
         Left_En = getEncoderLeftCnt();
         Right_En = getEncoderRightCnt();
         if ((Left_En >= 60 || Right_En >= 60)) {
@@ -407,8 +401,8 @@ void loop() {
       if (Beacon == 2 && (Left_En < 60 || Right_En < 60) ) {
         setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
         setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_FORWARD);
-        setMotorSpeed(LEFT_MOTOR, normalSpeed);
-        setMotorSpeed(RIGHT_MOTOR, normalSpeed);
+        setMotorSpeed(LEFT_MOTOR, normalSpeedleft);
+        setMotorSpeed(RIGHT_MOTOR, normalSpeedright);
         Left_En = getEncoderLeftCnt();
         Right_En = getEncoderRightCnt();
         if ((Left_En >= 60 || Right_En >= 60)) {
