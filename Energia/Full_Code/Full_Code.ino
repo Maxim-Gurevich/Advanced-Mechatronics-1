@@ -70,10 +70,12 @@ int IRStateL;
 int IRStateR;
 volatile byte state = LOW;
 int Beacon = 0;
-bool Left = false;
-bool Right = false;
-bool Mid = false;
 
+//Wiggling Vars
+int Wiggle_Time = 500;
+bool Wiggle = false;
+int Wiggle_Counter = 0;
+unsigned long Current_Time2;
 
 enum states {
   Left_Beacon,
@@ -122,6 +124,8 @@ void setup() {
   }
   Values[imax - 1] = 1;
   Values[(imax / 2) - 1] = 1;
+
+  setMotorSpeed(BOTH_MOTORS, 0);
 }
 
 // Sonar Sensors Function
@@ -198,12 +202,12 @@ void Back_Aligning() {
       if (Sonar_Diff < 0) {
         setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
         setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_BACKWARD);
-        setMotorSpeed(BOTH_MOTORS, normalSpeed*0.9);// * abs(Sonar_Diff) / 4);
+        setMotorSpeed(BOTH_MOTORS, normalSpeed * 0.9); // * abs(Sonar_Diff) / 4);
       }
       if (Sonar_Diff > 0) {
         setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_FORWARD);
         setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
-        setMotorSpeed(BOTH_MOTORS, normalSpeed*0.9);// * abs(Sonar_Diff) / 4);
+        setMotorSpeed(BOTH_MOTORS, normalSpeed * 0.9); // * abs(Sonar_Diff) / 4);
       }
 
       Sonar_Sensors();
@@ -308,6 +312,9 @@ void IR_Sensors() {
   //    Beacon = 1; //Turn Left
   //  } else if (IRStateR == 0) {
   //    Beacon = 3; //Turn right
+  //  } else {
+  //    Beacon = 4;
+  //    Current_Time = millis();
   //  }
 }
 
@@ -315,8 +322,8 @@ void Turn_Left() {
   Left_En = 0;
   resetLeftEncoderCnt();
   setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
-  while (Left_En < 120) {
-    setMotorSpeed(LEFT_MOTOR, normalSpeedright);
+  while (Left_En < 100) {
+    setMotorSpeed(LEFT_MOTOR, normalSpeed);
     setMotorSpeed(RIGHT_MOTOR, 0);
     Left_En = getEncoderLeftCnt();
   }
@@ -327,7 +334,7 @@ void Turn_Right() {
   resetLeftEncoderCnt();
   Left_En = 0;
   setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
-  while (Left_En < 120) {
+  while (Left_En < 100) {
     setMotorSpeed(LEFT_MOTOR, normalSpeedleft);
     setMotorSpeed(RIGHT_MOTOR, 0);
     Left_En = getEncoderLeftCnt();
@@ -342,7 +349,6 @@ void blink() {
 
 void loop() {
   enableMotor(BOTH_MOTORS);
-  setMotorSpeed(BOTH_MOTORS, 0);
   if (Repeat == false) {
     Not_Turning(); //Works, need improvement (make it either go backward or forward if stuck)
     Align_Maxdiff = 0.7;
@@ -389,11 +395,14 @@ void loop() {
 
     case Just_Shot:
       if (Beacon == 1) {
-        if (Left_En < 120) {
+        if (Left_En < 100) {
           setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
-          setMotorSpeed(LEFT_MOTOR, normalSpeedright);
+          setMotorSpeed(LEFT_MOTOR, normalSpeed);
           setMotorSpeed(RIGHT_MOTOR, 0);
           Left_En = getEncoderLeftCnt();
+        } else {
+          Beacon = 0;
+          Current_State = Home;
         }
       }
 
@@ -401,14 +410,9 @@ void loop() {
         Beacon = 0;
         Current_State = Home;
       }
-      else {
-        Beacon = 0;
-        Left = false;
-        Current_State = Home;
-      }
 
       if (Beacon == 3) {
-        if (Left_En < 120) {
+        if (Left_En < 100) {
           setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
           setMotorSpeed(LEFT_MOTOR, normalSpeedright);
           setMotorSpeed(RIGHT_MOTOR, 0);
@@ -416,35 +420,67 @@ void loop() {
         }
         else {
           Beacon = 0;
-          Right = false;
           Current_State = Home;
         }
       }
       break;
-    case Home:
 
+    case Home:
       if (Beacon == 0) {
         IR_Sensors();
       }
       if (Beacon == 1) {
-        if (Left == false) {
-          Current_State = Left_Beacon;
-          Left = true;
-          break;
-        }
+        Current_State = Left_Beacon;
       }
       if (Beacon == 2) {
         Current_State = Shooting;
         Current_Time = millis();
-        break;
       }
       if (Beacon == 3) {
-        if (Right == false) {
-          Current_State = Right_Beacon;
-          Right = true;
-          break;
+        Current_State = Right_Beacon;
+      }
+
+      if (Beacon == 4) {
+
+        if ( (millis() - Current_Time) < Wiggle_Time && IRStateL == 1 && Wiggle_Counter == 0) {
+          setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
+          setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_FORWARD);
+          setMotorSpeed(BOTH_MOTORS, normalSpeed);
+          IRStateL = digitalRead(IRleft);
+          Current_Time2 = millis();
+        } else if (millis() - Current_Time2 < Wiggle_Time && Wiggle_Counter == 0 ) {
+          setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
+          setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_BACKWARD);
+          setMotorSpeed(BOTH_MOTORS, normalSpeed);
+        } else if (IRStateL == 0 && Wiggle_Counter == 0) {
+          Beacon = 1;
+        } else if (Wiggle_Counter == 0) {
+          Beacon = 0;
+          Wiggle_Counter = 1;
         }
       }
+      if ( (millis() - Current_Time) < Wiggle_Time && IRStateR == 1 && Wiggle_Counter == 1) {
+        setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
+        setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_BACKWARD);
+        setMotorSpeed(BOTH_MOTORS, normalSpeed);
+        IRStateR = digitalRead(IRright);
+        Current_Time2 = millis();
+      } else if (millis() - Current_Time2 < Wiggle_Time && Wiggle_Counter == 1 ) {
+        setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
+        setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_FORWARD);
+        setMotorSpeed(BOTH_MOTORS, normalSpeed);
+      } else if (IRStateR == 0 && Wiggle_Counter == 1) {
+        Beacon = 3;
+      } else if (Wiggle_Counter == 1) {
+        Beacon = 0;
+        Wiggle_Counter = 0;
+      }
+      Sonar_Sensors();
+      if (abs(Sonar_Diff) > 20 && Right_Sonar > 90) {
+        Repeat = false;
+      }
+      //      else if () { encoder doesn't change for 300
+      //      }
       break;
   }
   //  analogWrite(Enable_Motor, Motor_Speed);
