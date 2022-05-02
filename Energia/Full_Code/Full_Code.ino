@@ -7,10 +7,10 @@ uint16_t sensorVal[LS_NUM_SENSORS];
 uint16_t sensorMaxVal[LS_NUM_SENSORS];
 uint16_t sensorMinVal[LS_NUM_SENSORS];
 uint16_t slowSpeed = 10;
-uint16_t normalSpeed = 13;
+uint16_t normalSpeed = 18;
 uint16_t fastSpeed = 24;
-uint16_t normalSpeedright = 13 ;
-uint16_t normalSpeedleft = 13 ; //16.8
+uint16_t normalSpeedright = 18 ;
+uint16_t normalSpeedleft = 18 ; //16.8
 uint16_t sensorCalVal[LS_NUM_SENSORS];
 uint8_t lineColor = DARK_LINE;
 uint32_t linePos;
@@ -52,19 +52,19 @@ float Sonar_Diff; // right - left
 bool Repeat = false;
 
 //Shooting Vars:
-//uint16_t Enable_Motor = ;
-//uint16_t Input1 =;
-//uint16_t Input2 =;
+uint16_t Enable_Motor = P5_6 ;
+uint16_t Input1 = P6_6;
+uint16_t Input2 = P6_7;
 int Motor_Speed = 255 * 7 / 9;
-//uint16_t Touch_Pin =;
+uint16_t Touch_Pin = P2_3;
 int Touch_Val;
 unsigned long Current_Time;
 int Shooting_Time = 500;
 
 //IR Sensors
-int IRleft = P4_3;
-int IRright = P3_2;
-int IRmid = P4_1;
+int IRleft = P8_2;
+int IRright = P8_4;
+int IRmid = P9_0;
 int IRStateM;
 int IRStateL;
 int IRStateR;
@@ -98,21 +98,18 @@ void setup() {
   pinMode(TRIG1_PIN, OUTPUT);
   pinMode(TRIG2_PIN, OUTPUT);
 
-  //Initialize Shooting Motor Pins
-  //  pinMode(Enable_Motor, OUTPUT);
-  //  pinMode(Input1, OUTPUT);
-  //  pinMode(Input2, OUTPUT);
+  //  Initialize Shooting Motor Pins
+  pinMode(Enable_Motor, OUTPUT);
+  pinMode(Input1, OUTPUT);
+  pinMode(Input2, OUTPUT);
 
   //Touch Sensor Pin
-  //  pinMode(Touch_Pin, INPUT_PULLUP);
+  pinMode(Touch_Pin, INPUT_PULLUP);
 
   // IR Sensors
   pinMode(IRmid, INPUT_PULLUP); // NOTE: because this is a pullup, a 1 indicates no beacon detected, 0 is yes beacon detected
-  attachInterrupt(digitalPinToInterrupt(IRmid), blink, CHANGE);
   pinMode(IRleft, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(IRleft), blink, CHANGE);
   pinMode(IRright, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(IRright), blink, CHANGE);
 
   // Initialize the RSLK library and the encoder
   setupRSLK();
@@ -174,8 +171,8 @@ void Not_Turning() {
     }
     setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
     setMotorDirection(RIGHT_MOTOR, MOTOR_DIR_BACKWARD);
-    setMotorSpeed(LEFT_MOTOR, normalSpeedleft);
-    setMotorSpeed(RIGHT_MOTOR, normalSpeedright);
+    setMotorSpeed(LEFT_MOTOR, normalSpeed);
+    setMotorSpeed(RIGHT_MOTOR, normalSpeed);
     Right_En = getEncoderRightCnt();
     Left_En = getEncoderLeftCnt();
 
@@ -265,7 +262,7 @@ void CW_90() {
 }
 
 void Align_Vertical() {
-  while ((Right_Sonar + Left_Sonar) / 2 < 30) {
+  while ((Right_Sonar + Left_Sonar) / 2 < 20) {
     setMotorDirection(BOTH_MOTORS, MOTOR_DIR_FORWARD);
     linePos = getLinePosition(sensorCalVal, lineColor);
     if (linePos > 0 && linePos < 3000) {
@@ -281,7 +278,7 @@ void Align_Vertical() {
     Sonar_Sensors();
   }
 
-  while ((Right_Sonar + Left_Sonar) / 2 > 30) {
+  while ((Right_Sonar + Left_Sonar) / 2 > 20) {
     setMotorDirection(BOTH_MOTORS, MOTOR_DIR_BACKWARD);
     linePos = getLinePosition(sensorCalVal, lineColor);
     if (linePos > 0 && linePos < 3000) {
@@ -302,20 +299,20 @@ void Align_Vertical() {
 
 void IR_Sensors() {
 
-  IRStateM = digitalRead(IRmid);
-  IRStateL = digitalRead(IRleft);
-  IRStateR = digitalRead(IRright);
-  Beacon = round(random(1.6, 3.4));
-  //  if (IRStateM == 0) {
-  //    Beacon = 2; //Shoot
-  //  } else if (IRStateL == 0) {
-  //    Beacon = 1; //Turn Left
-  //  } else if (IRStateR == 0) {
-  //    Beacon = 3; //Turn right
-  //  } else {
-  //    Beacon = 4;
-  //    Current_Time = millis();
-  //  }
+  IRStateM = analogRead(IRmid);
+  IRStateL = analogRead(IRleft);
+  IRStateR = analogRead(IRright);
+  //  Beacon = round(random(1.6, 3.4));
+  if (IRStateM < 50) {
+    Beacon = 2; //Shoot
+  } else if (IRStateL < 10) {
+    Beacon = 1; //Turn Left
+  } else if (IRStateR < 50) {
+    Beacon = 3; //Turn right
+  } else {
+    Beacon = 4;
+    Current_Time = millis();
+  }
 }
 
 void Turn_Left() {
@@ -335,7 +332,7 @@ void Turn_Right() {
   Left_En = 0;
   setMotorDirection(LEFT_MOTOR, MOTOR_DIR_FORWARD);
   while (Left_En < 100) {
-    setMotorSpeed(LEFT_MOTOR, normalSpeedleft);
+    setMotorSpeed(LEFT_MOTOR, normalSpeed);
     setMotorSpeed(RIGHT_MOTOR, 0);
     Left_En = getEncoderLeftCnt();
 
@@ -345,6 +342,16 @@ void Turn_Right() {
 
 void blink() {
   state = !state;
+}
+
+void First_Load() {
+  Touch_Val = digitalRead(Touch_Pin);
+  while (Touch_Val == 0) {
+    digitalWrite(Input1, HIGH);
+    digitalWrite(Input2, LOW);
+    analogWrite(Enable_Motor, Motor_Speed);
+    Touch_Val = digitalRead(Touch_Pin);
+  }
 }
 
 void loop() {
@@ -361,6 +368,7 @@ void loop() {
     Align_Vertical(); //works
     Align_Maxdiff = 0.7; //works
     Back_Aligning(); //works
+    First_Load();
     Repeat = true;
     Current_State = Home;
   }
@@ -380,9 +388,9 @@ void loop() {
 
     case Shooting:
       if (millis() - Current_Time < Shooting_Time) {
-        //        analogWrite(Enable_Motor, Motor_Speed);
-        //        digitalWrite(Input1, HIGH);
-        //        digitalWrite(Input2, LOW);
+        analogWrite(Enable_Motor, Motor_Speed);
+        digitalWrite(Input1, HIGH);
+        digitalWrite(Input2, LOW);
       }
       else {
         Current_State = Just_Shot;
@@ -414,7 +422,7 @@ void loop() {
       if (Beacon == 3) {
         if (Left_En < 100) {
           setMotorDirection(LEFT_MOTOR, MOTOR_DIR_BACKWARD);
-          setMotorSpeed(LEFT_MOTOR, normalSpeedright);
+          setMotorSpeed(LEFT_MOTOR, normalSpeed);
           setMotorSpeed(RIGHT_MOTOR, 0);
           Left_En = getEncoderLeftCnt();
         }
@@ -475,18 +483,18 @@ void loop() {
         Beacon = 0;
         Wiggle_Counter = 0;
       }
-      Sonar_Sensors();
-      if (abs(Sonar_Diff) > 20 && Right_Sonar > 90) {
-        Repeat = false;
-      }
-      //      else if () { encoder doesn't change for 300
+
+      //      if () {
+      //        Repeat = false;
       //      }
+      //            else if () { encoder doesn't change for 300
+      //            }
       break;
   }
-  //  analogWrite(Enable_Motor, Motor_Speed);
-  //  Touch_Val = digitalRead(Touch_Pin);
-  //  if ( (Touch_Val == 0) && Current_State != Shooting ) {
-  //    analogWrite(Enable_Motor, 0);
-  //  }
+  analogWrite(Enable_Motor, Motor_Speed);
+  Touch_Val = digitalRead(Touch_Pin);
+  if ( (Touch_Val == 0) && Current_State != Shooting ) {
+    analogWrite(Enable_Motor, 0);
+  }
 
 }
